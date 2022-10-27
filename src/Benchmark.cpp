@@ -38,12 +38,12 @@ void BenchmarkMalloc(size_t ntimes, size_t nworks, size_t rounds)
 	{
 		t.join();
 	}
-	printf("%u���̲߳���ִ��%u�ִΣ�ÿ�ִ�malloc %u��: ���ѣ�%u ms\n", nworks, rounds, ntimes, malloc_costtime);
-	printf("%u���̲߳���ִ��%u�ִΣ�ÿ�ִ�free %u��: ���ѣ�%u ms\n", nworks, rounds, ntimes, free_costtime);
-	printf("%u���̲߳���malloc&free %u�Σ��ܼƻ��ѣ�%u ms\n", nworks, nworks*rounds*ntimes, malloc_costtime + free_costtime);
+	printf("%u锟斤拷锟竭程诧拷锟斤拷执锟斤拷%u锟街次ｏ拷每锟街达拷malloc %u锟斤拷: 锟斤拷锟窖ｏ拷%u ms\n", nworks, rounds, ntimes, malloc_costtime);
+	printf("%u锟斤拷锟竭程诧拷锟斤拷执锟斤拷%u锟街次ｏ拷每锟街达拷free %u锟斤拷: 锟斤拷锟窖ｏ拷%u ms\n", nworks, rounds, ntimes, free_costtime);
+	printf("%u锟斤拷锟竭程诧拷锟斤拷malloc&free %u锟轿ｏ拷锟杰计伙拷锟窖ｏ拷%u ms\n", nworks, nworks*rounds*ntimes, malloc_costtime + free_costtime);
 }
 
-// ���ִ������ͷŴ��� �߳��� �ִ�
+// 锟斤拷锟街达拷锟斤拷锟斤拷锟酵放达拷锟斤拷 锟竭筹拷锟斤拷 锟街达拷
 void BenchmarkConcurrentMalloc(size_t ntimes, size_t nworks, size_t rounds)
 {
 	std::vector<std::thread> vthread(nworks);
@@ -78,10 +78,10 @@ void BenchmarkConcurrentMalloc(size_t ntimes, size_t nworks, size_t rounds)
 	{
 		t.join();
 	}
-	printf("%u���̲߳���ִ��%u�ִΣ�ÿ�ִ�concurrent alloc %u��: ���ѣ�%u ms\n", nworks, rounds, ntimes, malloc_costtime);
-		printf("%u���̲߳���ִ��%u�ִΣ�ÿ�ִ�concurrent dealloc %u��: ���ѣ�%u ms\n",
+	printf("%u锟斤拷锟竭程诧拷锟斤拷执锟斤拷%u锟街次ｏ拷每锟街达拷concurrent alloc %u锟斤拷: 锟斤拷锟窖ｏ拷%u ms\n", nworks, rounds, ntimes, malloc_costtime);
+		printf("%u锟斤拷锟竭程诧拷锟斤拷执锟斤拷%u锟街次ｏ拷每锟街达拷concurrent dealloc %u锟斤拷: 锟斤拷锟窖ｏ拷%u ms\n",
 		nworks, rounds, ntimes, free_costtime);
-	printf("%u���̲߳���concurrent alloc&dealloc %u�Σ��ܼƻ��ѣ�%u ms\n",
+	printf("%u锟斤拷锟竭程诧拷锟斤拷concurrent alloc&dealloc %u锟轿ｏ拷锟杰计伙拷锟窖ｏ拷%u ms\n",
 		nworks, nworks*rounds*ntimes, malloc_costtime + free_costtime);
 }
 

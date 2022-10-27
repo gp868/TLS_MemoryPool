@@ -4,10 +4,10 @@
 #include "ThreadCache.h"
 #include "PageCache.h"
 
-//±»¶¯µ÷ÓÃ£¬ÄÄ¸öÏß³ÌÀ´ÁËÖ®ºó£¬ÐèÒªÄÚ´æ¾Íµ÷ÓÃÕâ¸ö½Ó¿Ú
+//è¢«åŠ¨è°ƒç”¨ï¼Œå“ªä¸ªçº¿ç¨‹æ¥äº†ä¹‹åŽï¼Œéœ€è¦å†…å­˜å°±è°ƒç”¨è¿™ä¸ªæŽ¥å£
 static inline void* ConcurrentAlloc(size_t size)
 {
-	if (size > MAX_BYTES)//³¬¹ýÒ»¸ö×î´óÖµ 64k£¬¾Í×Ô¼º´ÓÏµÍ³ÖÐ»ñÈ¡£¬·ñÔòÊ¹ÓÃÄÚ´æ³Ø
+	if (size > MAX_BYTES)//è¶…è¿‡ä¸€ä¸ªæœ€å¤§å€¼ 64kï¼Œå°±è‡ªå·±ä»Žç³»ç»Ÿä¸­èŽ·å–ï¼Œå¦åˆ™ä½¿ç”¨å†…å­˜æ± 
 	{
 		//return malloc(size);
 		Span* span = PageCache::GetInstence()->AllocBigPageObj(size);
@@ -16,7 +16,7 @@ static inline void* ConcurrentAlloc(size_t size)
 	}
 	else
 	{
-		if (tlslist == nullptr)//µÚÒ»´ÎÀ´£¬×Ô¼º´´½¨£¬ºóÃæÀ´µÄ£¬¾Í¿ÉÒÔÖ±½ÓÊ¹ÓÃµ±Ç°´´½¨ºÃµÄÄÚ´æ³Ø
+		if (tlslist == nullptr)//ç¬¬ä¸€æ¬¡æ¥ï¼Œè‡ªå·±åˆ›å»ºï¼ŒåŽé¢æ¥çš„ï¼Œå°±å¯ä»¥ç›´æŽ¥ä½¿ç”¨å½“å‰åˆ›å»ºå¥½çš„å†…å­˜æ± 
 		{
 			tlslist = new ThreadCache;
 		}
@@ -25,7 +25,7 @@ static inline void* ConcurrentAlloc(size_t size)
 	}
 }
 
-//static inline void ConcurrentFree(void* ptr, size_t size)//×îºóÊÍ·Å
+//static inline void ConcurrentFree(void* ptr, size_t size)//æœ€åŽé‡Šæ”¾
 //{
 //	if (size > MAX_BYTES)
 //	{
@@ -37,7 +37,8 @@ static inline void* ConcurrentAlloc(size_t size)
 //	}
 //}
 
-static inline void ConcurrentFree(void* ptr)//×îºóÊÍ·Å
+static inline void ConcurrentFree(void* ptr)//æœ€åŽé‡Šæ”¾
+
 {
 	Span* span = PageCache::GetInstence()->MapObjectToSpan(ptr);
 	size_t size = span->_objsize;

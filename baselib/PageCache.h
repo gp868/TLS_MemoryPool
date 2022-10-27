@@ -2,9 +2,9 @@
 
 #include "Common.h"
 
-//¶ÔÓÚPage CacheÒ²ÒªÉèÖÃÎªµ¥Àı£¬¶ÔÓÚCentral Cache»ñÈ¡spanµÄÊ±ºò
-//Ã¿´Î¶¼ÊÇ´ÓÍ¬Ò»¸öpageÊı×éÖĞ»ñÈ¡span
-//µ¥ÀıÄ£Ê½
+//å¯¹äºPage Cacheä¹Ÿè¦è®¾ç½®ä¸ºå•ä¾‹ï¼Œå¯¹äºCentral Cacheè·å–spançš„æ—¶å€™
+//æ¯æ¬¡éƒ½æ˜¯ä»åŒä¸€ä¸ªpageæ•°ç»„ä¸­è·å–span
+//å•ä¾‹æ¨¡å¼
 class PageCache
 {
 public:
@@ -17,12 +17,12 @@ public:
 	void FreeBigPageObj(void* ptr, Span* span);
 
 	Span* _NewSpan(size_t n);
-	Span* NewSpan(size_t n);//»ñÈ¡µÄÊÇÒÔÒ³Îªµ¥Î»
+	Span* NewSpan(size_t n);//è·å–çš„æ˜¯ä»¥é¡µä¸ºå•ä½
 
-	//»ñÈ¡´Ó¶ÔÏóµ½spanµÄÓ³Éä
+	//è·å–ä»å¯¹è±¡åˆ°spançš„æ˜ å°„
 	Span* MapObjectToSpan(void* obj);
 
-	//ÊÍ·Å¿Õ¼äspan»Øµ½PageCache£¬²¢ºÏ²¢ÏàÁÚµÄspan
+	//é‡Šæ”¾ç©ºé—´spanå›åˆ°PageCacheï¼Œå¹¶åˆå¹¶ç›¸é‚»çš„span
 	void ReleaseSpanToPageCache(Span* span);
 
 private:
