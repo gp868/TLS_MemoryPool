@@ -14,23 +14,6 @@ Span* CentralCache::GetOneSpan(SpanList& spanlist, size_t byte_size)
 			span = span->_next;
 	}
 
-
-	////测试打桩
-	//Span* newspan = new Span;
-	//newspan->_objsize = 16;
-	//void* ptr = malloc(16 * 8);
-	//void* cur = ptr;
-	//for (size_t i = 0; i < 7; ++i)
-	//{
-	//	void* next = (char*)cur + 16;
-	//	NEXT_OBJ(cur) = next;
-	//	cur = next;
-	//}
-	//NEXT_OBJ(cur) = nullptr;
-	//newspan->_list = ptr;
-
-
-
 	// 走到这儿，说明前面没有获取到span,都是空的，到下一层pagecache获取span
 	Span* newspan = PageCache::GetInstence()->NewSpan(SizeClass::NumMovePage(byte_size));
 	// 将span页切分成需要的对象并链接起来
@@ -60,10 +43,8 @@ size_t CentralCache::FetchRangeObj(void*& start, void*& end, size_t n, size_t by
 	SpanList& spanlist = _spanlist[index];//赋值->拷贝构造
 
 	////到时候记得加锁
-	//spanlist.Lock();
+	// spanlist.Lock();
 	std::unique_lock<std::mutex> lock(spanlist._mutex);
-
-
 	Span* span = GetOneSpan(spanlist, byte_size);
 	//到这儿已经获取到一个newspan
 
@@ -93,8 +74,7 @@ size_t CentralCache::FetchRangeObj(void*& start, void*& end, size_t n, size_t by
 		spanlist.PushBack(span);
 	}
 
-	//spanlist.Unlock();
-
+	// spanlist.Unlock();
 	return batchsize;
 }
 

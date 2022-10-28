@@ -24,7 +24,7 @@ public:
 	//从page cache获取一个span
 	Span* GetOneSpan(SpanList& spanlist, size_t byte_size);
 
-	//从中心缓存获取一定数量的对象给threa cache
+	//从中心缓存获取一定数量的对象给thread cache
 	size_t FetchRangeObj(void*& start, void*& end, size_t n, size_t byte_size);
 
 	//将一定数量的对象释放给span跨度

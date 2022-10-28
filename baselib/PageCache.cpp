@@ -62,7 +62,6 @@ Span* PageCache::NewSpan(size_t n)
 }
 
 
-
 Span* PageCache::_NewSpan(size_t n)
 {
 	assert(n < NPAGES);
@@ -99,11 +98,12 @@ Span* PageCache::_NewSpan(size_t n)
 	Span* span = new Span;
 
 	// 到这里说明SpanList中没有合适的span,只能向系统申请128页的内存
-// #ifdef _WIN32
-// 	void* ptr = malloc(0, (NPAGES - 1)*(1 << PAGE_SHIFT), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-// #else
-// 	//  brk
-// #endif
+
+	// #ifdef _WIN32
+	// 	void* ptr = malloc(0, (NPAGES - 1)*(1 << PAGE_SHIFT), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	// #else
+	// 	//  brk
+	// #endif
 
 	void* ptr = malloc((NPAGES - 1)*(1 << PAGE_SHIFT));
 	span->_pageid = (PageID)ptr >> PAGE_SHIFT;

@@ -2,29 +2,14 @@
 #include "CentralCache.h"
 
 
-//从中心缓存获取对象
+// 从中心缓存获取对象
 // 每一次取批量的数据，因为每次到CentralCache申请内存的时候是需要加锁的
 // 所以一次就多申请一些内存块，防止每次到CentralCache去内存块的时候,多次加锁造成效率问题
 void* ThreadCache::FetchFromCentralCache(size_t index, size_t size)
 {
-	//打桩
-	//return malloc(size);
-
-	//打桩
-	//size_t numtomove = 5;
-	//void* start = nullptr, *end = nullptr;
-	//size_t batchsize = CentralCache::Getinstance()->FetchRangeObj(start, end, numtomove, size);
-
-	//if (batchsize > 1)
-	//{
-	//	Freelist* freelist = &_freelist[index];
-	//	freelist->PushRange(NEXT_OBJ(start), end, batchsize - 1);
-	//}
-	//return start;
-
 	Freelist* freelist = &_freelist[index];
 	// 不是每次申请10个，而是进行慢增长的过程
-	// 单个对象越小，申请内存块的数量越多
+	// 单个对象越小，申请内存块的数量越大
 	// 单个对象越大，申请内存块的数量越小
 	// 申请次数越多，数量多
 	// 次数少,数量少
