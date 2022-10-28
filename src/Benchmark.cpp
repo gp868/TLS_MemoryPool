@@ -38,9 +38,9 @@ void BenchmarkMalloc(size_t ntimes, size_t nworks, size_t rounds)
 	{
 		t.join();
 	}
-	printf("%u锟斤拷锟竭程诧拷锟斤拷执锟斤拷%u锟街次ｏ拷每锟街达拷malloc %u锟斤拷: 锟斤拷锟窖ｏ拷%u ms\n", nworks, rounds, ntimes, malloc_costtime);
-	printf("%u锟斤拷锟竭程诧拷锟斤拷执锟斤拷%u锟街次ｏ拷每锟街达拷free %u锟斤拷: 锟斤拷锟窖ｏ拷%u ms\n", nworks, rounds, ntimes, free_costtime);
-	printf("%u锟斤拷锟竭程诧拷锟斤拷malloc&free %u锟轿ｏ拷锟杰计伙拷锟窖ｏ拷%u ms\n", nworks, nworks*rounds*ntimes, malloc_costtime + free_costtime);
+	printf("%u个线程并发执行%u轮次，每轮次malloc %u次: 花费：%u ms\n", nworks, rounds, ntimes, malloc_costtime);
+	printf("%u个线程并发执行%u轮次，每轮次free %u次: 花费：%u ms\n", nworks, rounds, ntimes, free_costtime);
+	printf("%u个线程并发malloc&free %u次，总计花费：%u ms\n", nworks, nworks*rounds*ntimes, malloc_costtime + free_costtime);
 }
 
 // 锟斤拷锟街达拷锟斤拷锟斤拷锟酵放达拷锟斤拷 锟竭筹拷锟斤拷 锟街达拷
@@ -78,11 +78,9 @@ void BenchmarkConcurrentMalloc(size_t ntimes, size_t nworks, size_t rounds)
 	{
 		t.join();
 	}
-	printf("%u锟斤拷锟竭程诧拷锟斤拷执锟斤拷%u锟街次ｏ拷每锟街达拷concurrent alloc %u锟斤拷: 锟斤拷锟窖ｏ拷%u ms\n", nworks, rounds, ntimes, malloc_costtime);
-		printf("%u锟斤拷锟竭程诧拷锟斤拷执锟斤拷%u锟街次ｏ拷每锟街达拷concurrent dealloc %u锟斤拷: 锟斤拷锟窖ｏ拷%u ms\n",
-		nworks, rounds, ntimes, free_costtime);
-	printf("%u锟斤拷锟竭程诧拷锟斤拷concurrent alloc&dealloc %u锟轿ｏ拷锟杰计伙拷锟窖ｏ拷%u ms\n",
-		nworks, nworks*rounds*ntimes, malloc_costtime + free_costtime);
+	printf("%u个线程并发执行%u轮次，每轮次concurrent alloc %u次: 花费：%u ms\n", nworks, rounds, ntimes, malloc_costtime);
+	printf("%u个线程并发执行%u轮次，每轮次concurrent dealloc %u次: 花费：%u ms\n", nworks, rounds, ntimes, free_costtime);
+	printf("%u个线程并发concurrent alloc&dealloc %u次，总计花费：%u ms\n",nworks, nworks*rounds*ntimes, malloc_costtime + free_costtime);
 }
 
 
