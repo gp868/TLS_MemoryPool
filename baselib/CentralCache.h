@@ -16,8 +16,7 @@
 class CentralCache
 {
 public:
-	static CentralCache* Getinstence()
-	{
+	static CentralCache* Getinstence(){
 		return &_inst;
 	}
 
@@ -35,7 +34,6 @@ private:
 
 private:
 	CentralCache(){}//声明不实现，防止默认构造，自己创建
-
 	CentralCache(CentralCache&) = delete;
 	static CentralCache _inst;
 };

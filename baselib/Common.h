@@ -34,7 +34,7 @@ class Freelist
 private:
     void* _list = nullptr; // 给上缺省值
     size_t _size = 0;  // 记录有多少个对象
-    size_t _maxsize = 1;
+    size_t _maxsize = 5;
 
 public:
 

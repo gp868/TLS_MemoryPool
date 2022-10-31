@@ -14,7 +14,7 @@ Span* CentralCache::GetOneSpan(SpanList& spanlist, size_t byte_size)
 			span = span->_next;
 	}
 
-	// 走到这儿，说明前面没有获取到span,都是空的，到下一层pagecache获取span
+	// 若没有获取到span，为空，到下一层page cache获取span
 	Span* newspan = PageCache::GetInstence()->NewSpan(SizeClass::NumMovePage(byte_size));
 	// 将span页切分成需要的对象并链接起来
 	char* cur = (char*)(newspan->_pageid << PAGE_SHIFT);
@@ -36,13 +36,13 @@ Span* CentralCache::GetOneSpan(SpanList& spanlist, size_t byte_size)
 }
 
 
-//获取一个批量的内存对象
+// 获取一个批量的内存对象
 size_t CentralCache::FetchRangeObj(void*& start, void*& end, size_t n, size_t byte_size)
 {
 	size_t index = SizeClass::Index(byte_size);
 	SpanList& spanlist = _spanlist[index];//赋值->拷贝构造
 
-	////到时候记得加锁
+	// 加锁
 	// spanlist.Lock();
 	std::unique_lock<std::mutex> lock(spanlist._mutex);
 	Span* span = GetOneSpan(spanlist, byte_size);
@@ -50,8 +50,8 @@ size_t CentralCache::FetchRangeObj(void*& start, void*& end, size_t n, size_t by
 
 	//从span中获取range对象
 	size_t batchsize = 0;
-	void* prev = nullptr;//提前保存前一个
-	void* cur = span->_list;//用cur来遍历，往后走
+	void* prev = nullptr;	// 提前保存前一个
+	void* cur = span->_list;// 用cur来遍历，往后走
 	for (size_t i = 0; i < n; ++i)
 	{
 		prev = cur;
@@ -83,24 +83,20 @@ void CentralCache::ReleaseListToSpans(void* start, size_t size)
 	size_t index = SizeClass::Index(size);
 	SpanList& spanlist = _spanlist[index];
 
-	//将锁放在循环外面
-	// CentralCache:对当前桶进行加锁(桶锁)，减小锁的粒度
-	// PageCache:必须对整个SpanList全局加锁
-	// 因为可能存在多个线程同时去系统申请内存的情况
-	//spanlist.Lock();
+	// 加锁
 	std::unique_lock<std::mutex> lock(spanlist._mutex);
 
 	while (start)
 	{
 		void* next = NEXT_OBJ(start);
 
-		////到时候记得加锁
-		//spanlist.Lock(); // 构成了很多的锁竞争
+		// 加锁
+		// spanlist.Lock(); // 构成了很多的锁竞争
 
 		Span* span = PageCache::GetInstence()->MapObjectToSpan(start);
 		NEXT_OBJ(start) = span->_list;
 		span->_list = start;
-		//当一个span的对象全部释放回来的时候，将span还给pagecache,并且做页合并
+		// 当一个span的对象全部释放回来的时候，将span还给pagecache，并且做页合并
 		if (--span->_usecount == 0)
 		{
 			spanlist.Erase(span);

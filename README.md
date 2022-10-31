@@ -86,7 +86,7 @@ cd ../bin
 
 参考`tc_malloc`，项目设计分为三层结构：
 
-<img src="https://img-blog.csdnimg.cn/20190525161355118.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQxNTYyNjY1,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" style="zoom:67%;" />
+<img src="https://gcore.jsdelivr.net/gh/CARLOSGP2021/myFigures/img/image-20221031152910544.png" alt="image-20221031152910544" style="zoom:40%;" />
 
 第一层是Thread Cache，线程缓存是每个线程独有的，用于分配小于64k的内存。申请线程不需要加锁，每一个线程都有自己独立的cache，这也就是这个项目并发高效的地方。
 
@@ -94,18 +94,17 @@ cd ../bin
 
 第三层是Page Cache，存储的是以页为单位存储及分配的，Central Cache没有内存对象(Span)时，从Page cache分配出一定数量的Page，并切割成定长大小的小块内存，分配给Central Cache。Page Cache会回收Central Cache满足条件的Span(使用计数为0)对象，并且合并相邻的页，组成更大的页，缓解内存碎片的问题。
 
-注：怎么实现每个线程都拥有自己唯一的线程缓存呢？
-
-为了避免加锁降低效率，在Thread Cache中使用（tls）thread local storage保存每个线程本地的Thread Cache的指针，这样Thread Cache在申请释放内存是不需要锁的。因为每一个线程都拥有了自己唯一的一个全局变量。
-
-TLS分为静态的和动态的：
-
-- 静态的TLS：直接定义，项目用到的就是静态的TLS；
-- 动态的TLS：调用系统的API创建；
-
 ### 4.2 设计Thread Cache
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190526121757961.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQxNTYyNjY1,size_16,color_FFFFFF,t_70)
+为了避免加锁降低效率，在Thread Cache中使用TLS（thread local storage 线程本地存储）保存每个线程本地的Thread Cache的指针，这样Thread Cache在申请释放内存是不需要锁的，因为每一个线程都拥有了自己唯一的一个全局变量。
+
+在一个进程中，所有线程共享同一个地址空间。全局变量和静态变量能够被所有线程访问、修改。通过使用线程本地存储（Thread Local Storage，TLS）能够将数据和执行的特定线程联系起来。TLS是各线程独立的数据存储空间，声明的TLS变量在每个线程都有一个副本，互相不影响。
+
+TLS分为静态的和动态的。静态TLS使用语言本身的关键字定义，C/C++中包括：`_thread`、``thread_local`、`_declspec(thread)`（g++/gcc编译器下用不了，主要在visual c++下使用）。动态TLS通过调用系统API创建。
+
+ Thread Cache是一个对象数组，数组成员为一个个自由链表。
+
+![image-20221031153012443](https://gcore.jsdelivr.net/gh/CARLOSGP2021/myFigures/img/image-20221031153012443.png)
 
 `ThreadCache.h`：
 
@@ -131,7 +130,7 @@ _declspec (thread) static ThreadCache* tlslist = nullptr;
 ```
 申请内存：
 - 当内存申请size<=64k时在Thread Cache中申请内存，计算size在自由链表中的位置，如果自由链表中有内存对象时，直接从FistList[i]中Pop一下对象，时间复杂度是O(1)，且没有锁竞争。
-- 当FreeList[i]中没有对象时，则批量从Central Cache中获取一定数量的对象，插入到自由链表并返回一个对象。
+- 当FreeList[i]中没有对象时，则批量从Central Cache中获取一定数量的对象，插入到自由链表并返回一个对象。因为每次到CentralCache申请内存的时候是需要加锁的，所以一次就多申请一些内存块，防止多次加锁造成效率降低。
 
 释放内存：
 - 当释放内存小于64k时将内存释放回Thread Cache，计算size在自由链表中的位置，将对象Push到FreeList[i].
@@ -220,7 +219,15 @@ public:
 - 为了保证全局只有唯一的Central Cache，设计成单例模式
 - 单例模式采用饿汉模式，避免高并发下资源的竞争
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190526160822712.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQxNTYyNjY1,size_16,color_FFFFFF,t_70)
+![img](https://gcore.jsdelivr.net/gh/CARLOSGP2021/myFigures/img/20210714203903997.png)
+
+TLS虽然解决了内存碎片的问题，但也导致了内存分配不均衡的问题。当一个线程大量开辟内存再释放的时候，会存储大量无法被其他资源使用的空闲内存资源。为解决这个问题，设计出central cache，使程序能够周期性的回收thread cache中的内存资源，避免一个或多个线程占用大量内存资源，而造成其它线程内存资源不足，让内存资源的分配在多个线程中更均衡。
+
+central cache是由spanlist组成的数组，其中spanlist是由span组成的双向链表。为了保证全局只有一个central cache，这个类设计成单例模式。Central Cache是存在竞争的，所以在这里取内存对象的时候需要加锁，但是锁的力度可以控制得很小。一个span对象大小是恒定的4K大小(32位下4K 64位下8K )，但是中心缓存数组每个元素指定了单个span划分成内存块的大小 (比如第一个8bytes 第二个16bytes等等)，故他们能挂载的内存块数不一样。
+
+由span对象划分出去的内存块和这个span对象是有归属关系的，所以由thread cache归还释放某个内存(比如16bytes)应该归还到central cache的16bytes部分的他所归属的那个span对象上。
+
+所以在Page Cache中维护一个页号到span的映射，当Page Cache给Central Cache分配一个span时，将这个映射更新到unordered_map中去，这样的话在central cache中的span对象下的内存块都是属于某个页的，也就有他的页号。同一个span切出来的内存块PageID都和span的PageID相同，这样就能很好的找出某个内存块属于哪一个span了。也就能通过unordered_map映射到span的id上，从而找到span，在Thread Cache还给Central Cache时，可以查这个unordered_map找到对应的span。
 
 `CentralCache.h`: 
 
@@ -248,7 +255,7 @@ public:
 	//从中心缓存获取一定数量的对象给thread cache
 	size_t FetchRangeObj(void*& start, void*& end, size_t n, size_t byte_size);
 
-	//将一定数量的对象释放给span跨度
+	//将一定数量的对象释放给span
 	void ReleaseListToSpans(void* start, size_t size);
 
 private:
@@ -264,7 +271,7 @@ private:
 申请内存：
 - 当Thread Cache中没有内存时，就会批量向Central Cache申请一些内存对象，Central Cache也有一个哈希映射的freelist，freelist中挂着span，从span中取出对象给Thread Cache，这个过程是需要加锁的。
 - Central Cache中没有非空的span时，则将空的span链在一起，向Page Cache申请一个span对象，span对象中是一些以页为单位的内存，切成需要的内存大小，并链接起来，挂到span中。
-- Central Cache的span中有一个_usecount，分配一个对象给Thread Cache，就++_usecount。
+- Central Cache的span中有一个`_usecount`，分配一个对象给Thread Cache，就++_usecount。
 
 释放内存：
 - 当Thread Cache过长或者线程销毁，则会将内存释放回Central Cache中的，释放回来时- -_usecount。
@@ -276,16 +283,16 @@ private:
 //是一链式结构，定义为结构体就行，避免需要很多的友元
 struct Span
 {
-	PageID _pageid = 0;//页号
-	size_t _npage = 0;//页数
+	PageID _pageid = 0;	//页号
+	size_t _npage = 0;	//页数
 
 	Span* _prev = nullptr;
 	Span* _next = nullptr;
 
-	void* _list = nullptr;//链接对象的自由链表，后面有对象就不为空，没有对象就是空
-	size_t _objsize = 0;//对象的大小
+	void* _list = nullptr;	//链接对象的自由链表，后面有对象就不为空，没有对象就是空
+	size_t _objsize = 0;	//对象的大小
 
-	size_t _usecount = 0;//对象使用计数,
+	size_t _usecount = 0;	//对象使用计数
 };
 ```
 
@@ -413,7 +420,19 @@ public:
 - 为了保证全局只有唯一的Page cache，这个类可以被设计成了单例模式；
 - 本单例模式采用饿汉模式；
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190526165113189.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQxNTYyNjY1,size_16,color_FFFFFF,t_70)
+![image-20221031153049936](https://gcore.jsdelivr.net/gh/CARLOSGP2021/myFigures/img/image-20221031153049936.png)
+
+Page Cache可回收上层缓存中空闲的span并合并成更大的span，因此可解决内存碎片的问题。当central cache中无空闲span时也会将大的span切小分配。central cache和page cache中的span不同，central cache中的span只代表一页，然后被分解成了小的内存块链接而成的链表，而page cache中的span是有多页组成的。
+
+当Central Cache向page cache申请内存时，Page Cache先检查对应位置有没有span，如果没有则向更大页寻找一个span，如果找到则分裂成两个。比如：申请的是4page，4page后面没有挂span，则向后面寻找更大的span，假设在10page位置找到一个span，则将10page span分裂为一个4page span和一个6page span。如果找到128 page都没有合适的span，则向系统使用map、brk或者是VirtualAlloc等方式申请128page span挂在自由链表中，再重复1中的过程。
+
+然后把这个4页的span对象切成4个一页的span对象，放在central cache中的16bytes位置。可以有四个结点，再把这四个一页的span对象切成需要的内存块大小。这里就是16bytes ，并链接起来，挂到span中。
+
+当Thread Cache过长或者线程销毁，则会将内存释放回Central Cache中。比如Thread cache中16bytes部分链表数目已经超出最大限制了，则会把后面再多出来的内存块放到central cache的16bytes部分的他所归属的那个span对象上。此时那个span对象的usecount就减一。当_usecount减到0时则表示所有对象都回到了span，则将Span释放回Page Cache，Page Cache中会依次寻找span的前后相邻pageid的span，看是否可以合并，如果合并继续向前寻找。这样就可以将切小的内存合并收缩成大的span，减少内存碎片。
+
+通过VirtualAlloc（Windows环境下是VirtualAlloc，Linux下使用brk或者mmap）直接向系统申请内存时，都是以页为单位的内存，在32位机器下，一页就是4K。所以从0开始每一页的起始地址都是4K的整数倍。将申请到的内存地址右移12位得到相应的页号，同样只需要将地址左移12位即得到每一页的起始地址。
+
+假如现在有一个PageID为50的3页的span，有一个PageID为53的6页的span。这两个span就可合并成一个PageID为50的9页的span，然后挂在9页的SpanList上。
 
 `PageCache.h`:
 
@@ -464,9 +483,10 @@ private:
 释放内存：
 - 如果Central Cache释放回一个span，则依次寻找span的前后_pageid的span，看是否可以合并，如果合并继续向前寻找。这样就可以将切小的内存合并收缩成大的span，减少内存碎片。
 
-4.6 向系统申请内存
-- VirtualAlloc https://baike.baidu.com/item/VirtualAlloc/1606859?fr=aladdin
-- brk和mmap https://www.cnblogs.com/vinozly/p/5489138.html
+### 4.6 向系统申请内存
+
+- VirtualAlloc：https://baike.baidu.com/item/VirtualAlloc/1606859?fr=aladdin
+- brk和mmap：https://www.cnblogs.com/vinozly/p/5489138.html
 
 ## 5. 项目不足及扩展学习
 
@@ -492,9 +512,10 @@ private:
 
 - STL空间配置器参考： https://blog.csdn.net/LF_2016/article/details/53511648
 
-- TLS参考资料：
+- TLS参考资料：[Thread Local Storage_evilswords的博客-CSDN博客](https://blog.csdn.net/evilswords/article/details/8191230)、[Thread Local Storage---__thread 关键字的使用方法_鱼思故渊的博客-CSDN博客](https://blog.csdn.net/yusiguyuan/article/details/22938671)、[线程本地存储TLS(Thread Local Storage)的原理和实现——分类和原理 - 莫水千流 - 博客园 (cnblogs.com)](https://www.cnblogs.com/zhoug2020/p/6497709.html)
 
-  https://blog.csdn.net/evilswords/article/details/8191230
-  https://blog.csdn.net/yusiguyuan/article/details/22938671
+- [基于线程本地存储(TLS)的三层内存池_CSUFT_NJU的博客-CSDN博客_tls 线程本地存储](https://blog.csdn.net/qq_44272681/article/details/118736142)
 
 - 
+
+  

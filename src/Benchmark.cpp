@@ -43,7 +43,7 @@ void BenchmarkMalloc(size_t ntimes, size_t nworks, size_t rounds)
 	printf("%u个线程并发malloc&free %u次，总计花费：%u ms\n", nworks, nworks*rounds*ntimes, malloc_costtime + free_costtime);
 }
 
-// 锟斤拷锟街达拷锟斤拷锟斤拷锟酵放达拷锟斤拷 锟竭筹拷锟斤拷 锟街达拷
+// 单轮次申请释放次数 线程数 轮次
 void BenchmarkConcurrentMalloc(size_t ntimes, size_t nworks, size_t rounds)
 {
 	std::vector<std::thread> vthread(nworks);
