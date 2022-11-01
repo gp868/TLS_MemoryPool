@@ -204,7 +204,7 @@ struct Span
 
     void* _list = nullptr;  //链接对象的自由链表，后面有对象就不为空，没有对象就是空
     size_t _objsize = 0;    //对象的大小
-    size_t _usecount = 0;   //对象使用计数,
+    size_t _usecount = 0;   //对象使用计数
 };
 
 //和上面的Freelist一样，各个接口自己实现，双向带头循环的Span链表

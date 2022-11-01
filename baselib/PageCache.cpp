@@ -97,7 +97,7 @@ Span* PageCache::_NewSpan(size_t n)
 
 	Span* span = new Span;
 
-	// 到这里说明SpanList中没有合适的span,只能向系统申请128页的内存
+	// 到这里说明SpanList中没有合适的span，只能向系统申请128页的内存
 
 	// #ifdef _WIN32
 	// 	void* ptr = malloc(0, (NPAGES - 1)*(1 << PAGE_SHIFT), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -137,7 +137,7 @@ Span* PageCache::MapObjectToSpan(void* obj)
 
 void PageCache::ReleaseSpanToPageCache(Span* cur)
 {
-	// 必须上全局锁,可能多个线程一起从ThreadCache中归还数据
+	// 必须上全局锁，可能多个线程一起从ThreadCache中归还数据
 	std::unique_lock<std::mutex> lock(_mutex);
 
 
@@ -177,7 +177,6 @@ void PageCache::ReleaseSpanToPageCache(Span* cur)
 		//超过128页则不合并
 		if (cur->_npage + prev->_npage > NPAGES - 1)
 			break;
-
 
 		// 先把prev从链表中移除
 		_spanlist[prev->_npage].Erase(prev);

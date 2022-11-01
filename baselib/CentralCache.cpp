@@ -96,7 +96,7 @@ void CentralCache::ReleaseListToSpans(void* start, size_t size)
 		Span* span = PageCache::GetInstence()->MapObjectToSpan(start);
 		NEXT_OBJ(start) = span->_list;
 		span->_list = start;
-		// 当一个span的对象全部释放回来的时候，将span还给pagecache，并且做页合并
+		// 当一个span的对象全部释放回来的时候，将span还给page cache，并且做页合并
 		if (--span->_usecount == 0)
 		{
 			spanlist.Erase(span);

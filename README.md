@@ -428,11 +428,11 @@ Page Cache可回收上层缓存中空闲的span并合并成更大的span，因�
 
 然后把这个4页的span对象切成4个一页的span对象，放在central cache中的16bytes位置。可以有四个结点，再把这四个一页的span对象切成需要的内存块大小。这里就是16bytes ，并链接起来，挂到span中。
 
-当Thread Cache过长或者线程销毁，则会将内存释放回Central Cache中。比如Thread cache中16bytes部分链表数目已经超出最大限制了，则会把后面再多出来的内存块放到central cache的16bytes部分的他所归属的那个span对象上。此时那个span对象的usecount就减一。当_usecount减到0时则表示所有对象都回到了span，则将Span释放回Page Cache，Page Cache中会依次寻找span的前后相邻pageid的span，看是否可以合并，如果合并继续向前寻找。这样就可以将切小的内存合并收缩成大的span，减少内存碎片。
+当Thread Cache过长或者线程销毁，则会将内存释放回Central Cache中。若Thread cache中16bytes部分链表数目已经超出最大限制了，则会把后面再多出来的内存块放到central cache的16bytes部分的他所归属的那个span对象上，此时那个span对象的usecount就减一。当_usecount减到0时则表示所有对象都回到了span，则将Span释放回Page Cache，Page Cache中会依次寻找span的前后相邻pageid的span，看是否可以合并，如果合并继续向前寻找。这样就可以将切小的内存合并收缩成大的span，减少内存碎片。
 
-通过VirtualAlloc（Windows环境下是VirtualAlloc，Linux下使用brk或者mmap）直接向系统申请内存时，都是以页为单位的内存，在32位机器下，一页就是4K。所以从0开始每一页的起始地址都是4K的整数倍。将申请到的内存地址右移12位得到相应的页号，同样只需要将地址左移12位即得到每一页的起始地址。
+通过VirtualAlloc（Windows环境下是VirtualAlloc，Linux下使用brk或者mmap）直接向系统申请内存时，都是以页为单位的内存，在32位机器下，一页就是4K，所以从0开始每一页的起始地址都是4K的整数倍。将申请到的内存地址右移12位得到相应的页号，同样只需要将地址左移12位即得到每一页的起始地址。
 
-假如现在有一个PageID为50的3页的span，有一个PageID为53的6页的span。这两个span就可合并成一个PageID为50的9页的span，然后挂在9页的SpanList上。
+假如现在有一个PageID为50的3页的span，有一个PageID为53的6页的span，这两个span就可合并成一个PageID为50的9页的span，然后挂在9页的SpanList上。
 
 `PageCache.h`:
 
@@ -516,6 +516,6 @@ private:
 
 - [基于线程本地存储(TLS)的三层内存池_CSUFT_NJU的博客-CSDN博客_tls 线程本地存储](https://blog.csdn.net/qq_44272681/article/details/118736142)
 
-- 
+- [C++高并发内存池的设计和实现_Moua的博客-CSDN博客_内存池的设计和实现](https://blog.csdn.net/qq_47406941/article/details/118492360)
 
   
