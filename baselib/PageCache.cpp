@@ -53,11 +53,7 @@ void PageCache::FreeBigPageObj(void* ptr, Span* span)
 Span* PageCache::NewSpan(size_t n)
 {
 	// 加锁，防止多个线程同时到PageCache中申请span
-	// 这里必须是给全局加锁，不能单独的给每个桶加锁
-	// 如果对应桶没有span,是需要向系统申请的
-	// 可能存在多个线程同时向系统申请内存的可能
 	std::unique_lock<std::mutex> lock(_mutex);
-
 	return _NewSpan(n);
 }
 
@@ -76,20 +72,16 @@ Span* PageCache::_NewSpan(size_t n)
 			Span* splist = new Span;
 
 			splist->_pageid = span->_pageid;
-			splist->_npage = n;
-			span->_pageid = span->_pageid + n;
-			span->_npage = span->_npage - n;
+			splist->_npage = n;					// central page分到npage
 
-			//splist->_pageid = span->_pageid + n;
-			//span->_npage = splist->_npage - n;
-			//span->_npage = n;
+			span->_pageid = span->_pageid + n;	// 更新span的页号
+			span->_npage = span->_npage - n;	// 分配后span剩余的page
 
-			for (size_t i = 0; i < n; ++i)
+			for (size_t i = 0; i < n; ++i){
 				_idspanmap[splist->_pageid + i] = splist;
+			}
 
-			//_spanlist[splist->_npage].PushFront(splist);
-			//return span;
-
+			// 将分出npage后剩余的page重新挂到spanlist上
 			_spanlist[span->_npage].PushFront(span);
 			return splist;
 		}
@@ -109,11 +101,12 @@ Span* PageCache::_NewSpan(size_t n)
 	span->_pageid = (PageID)ptr >> PAGE_SHIFT;
 	span->_npage = NPAGES - 1;
 
-	for (size_t i = 0; i < span->_npage; ++i)
+	for (size_t i = 0; i < span->_npage; ++i){
 		_idspanmap[span->_pageid + i] = span;
+	}
 
-	_spanlist[span->_npage].PushFront(span);  //方括号
-	return _NewSpan(n);
+	_spanlist[span->_npage].PushFront(span);
+	return _NewSpan(n);	// 重复上述的内存分割过程
 }
 
 // 获取从对象到span的映射
@@ -134,12 +127,10 @@ Span* PageCache::MapObjectToSpan(void* obj)
 }
 
 
-
 void PageCache::ReleaseSpanToPageCache(Span* cur)
 {
-	// 必须上全局锁，可能多个线程一起从ThreadCache中归还数据
+	// 上全局锁，可能多个线程一起从ThreadCache中归还数据
 	std::unique_lock<std::mutex> lock(_mutex);
-
 
 	// 当释放的内存是大于128页,直接将内存归还给操作系统,不能合并
 	if (cur->_npage >= NPAGES)
@@ -151,7 +142,6 @@ void PageCache::ReleaseSpanToPageCache(Span* cur)
 		delete cur;
 		return;
 	}
-
 
 	// 向前合并
 	while (1)
@@ -193,7 +183,6 @@ void PageCache::ReleaseSpanToPageCache(Span* cur)
 		// 继续向前合并
 		cur = prev;
 	}
-
 
 	//向后合并
 	while (1)
